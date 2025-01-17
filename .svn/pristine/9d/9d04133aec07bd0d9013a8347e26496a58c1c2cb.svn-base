@@ -1,0 +1,10 @@
+package com.future.blue.auth.dao;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import com.future.blue.auth.vo.AuthVO;
+
+@Mapper
+public interface IAuthDAO {
+	public AuthVO loadUserByUsername(String username);
+}	

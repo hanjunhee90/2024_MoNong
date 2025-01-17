@@ -1,0 +1,64 @@
+import requests
+import pandas as pd
+import xml.etree.ElementTree as ET
+
+# API 요청 URL과 기본 파라미터
+base_url = "https://www.kamis.or.kr/service/price/xml.do"
+params = {
+    "action": "dailyPriceByCategoryList",
+    "p_product_cls_code": "02",  # 제품 분류 코드
+    "p_item_category_code": "200",  # 부류 코드
+    "p_regday": "2024-12-27",  # 조회 날짜
+    "p_convert_kg_yn": "N",  # 단위 변환 여부
+    "p_cert_key": "21980a3f-3bba-4994-aa23-099eb549518c",  # 인증 키
+    "p_cert_id": "5072",  # 인증 ID
+    "p_returntype": "xml",  # 응답 형식
+}
+
+# 지역 코드 목록 (소매/도매 가격 통합 목록)
+country_codes = {
+    "1101": "서울", "2100": "부산", "2200": "대구", "2300": "인천", "2401": "광주", "2501": "대전",
+    "2601": "울산", "3111": "수원", "3214": "강릉", "3211": "춘천", "3311": "청주", "3511": "전주",
+    "3711": "포항", "3911": "제주", "3113": "의정부", "3613": "순천", "3714": "안동", "3814": "창원",
+    "3145": "용인", "2701": "세종", "3112": "성남", "3138": "고양", "3411": "천안", "3818": "김해"
+}
+
+# 전체 데이터를 담을 리스트
+all_data = []
+
+# 각 지역 데이터를 요청
+for code, name in country_codes.items():
+    print(f"지역 코드: {code} ({name}) - 데이터 요청 중...")
+    params["p_country_code"] = code  # 지역 코드 설정
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        xml_data = response.content
+
+        # XML 파싱
+        root = ET.fromstring(xml_data)
+        data_list = []
+
+        # XML 데이터를 딕셔너리로 변환
+        for item in root.findall(".//item"):
+            data = {child.tag: child.text for child in item}
+            data["지역"] = name  # 지역 정보를 추가
+            data_list.append(data)
+
+        # 데이터 추가
+        all_data.extend(data_list)
+
+    except requests.exceptions.RequestException as e:
+        print(f"{name} 지역 데이터 요청 중 오류 발생: {e}")
+    except ET.ParseError as e:
+        print(f"{name} 지역 XML 파싱 오류 발생: {e}")
+
+# 데이터프레임으로 변환
+df = pd.DataFrame(all_data)
+
+# 엑셀 파일로 저장
+excel_file = "merged_price_data(전국).xlsx"
+df.to_excel(excel_file, index=False, engine="openpyxl")
+
+print(f"데이터가 성공적으로 {excel_file}에 저장되었습니다.")

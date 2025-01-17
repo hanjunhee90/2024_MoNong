@@ -1,0 +1,27 @@
+package com.future.blue.board.service;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.future.blue.board.dao.BoardDAO;
+import com.future.blue.board.vo.BoardVO;
+
+@Service
+public class BoardServiceImpl implements BoardService {
+
+    @Autowired
+    private BoardDAO boardDAO;
+
+    // 기존 메서드와 함께 추가
+    @Override
+    public List<BoardVO> getBoardListPaged(int offset, int limit, String title) {
+        return boardDAO.getBoardListPaged(offset, limit, title);
+    }
+
+    @Override
+    public int getTotalCount(String title) {
+        return boardDAO.getTotalCount(title);
+    }
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.future.blue.mypage.dao.IMypageDAO">
+	
+	<select id="getMyData" parameterType="String" resultType="MypageVO" >
+		SELECT mem_id
+			 , mem_pass
+			 , mem_role
+			 , mem_name
+			 , mem_phone
+			 , mem_addr
+			 , mem_reliability
+			 , mem_profile
+			 , mem_nic
+		FROM member
+		WHERE mem_id = #{memId}
+	</select>
+	
+	<select id="getMyPoint" parameterType="String" resultType="PointVO">
+		SELECT b.total_points
+		FROM member a, points b
+		WHERE a.mem_id = b.mem_id
+		AND a.mem_id = #{memId}
+	</select>
+	
+	<update id="profileUpload" parameterType="MypageVO">
+		UPDATE member
+		SET mem_profile = #{memProfile}
+		WHERE mem_id = #{memId}
+	</update>
+	
+	<update id='changeInfo' parameterType="MypageVO">
+		UPDATE member
+		SET mem_nic = #{memNic}
+		   ,mem_addr = #{memAddr}
+		WHERE mem_id = #{memId}
+	</update>
+
+</mapper>

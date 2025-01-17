@@ -1,0 +1,42 @@
+package com.future.blue.auth.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import com.future.blue.auth.dao.IAuthDAO;
+import com.future.blue.auth.vo.AuthVO;
+
+@Service("IAuthService")
+public class AuthServiceImpl implements IAuthService {
+	@Autowired
+	IAuthDAO dao;
+
+	@Autowired
+	private RedisTemplate<String, String> redisTemplate;
+	
+	@Override
+	public AuthVO loadUserByUsername(String username) {
+		return dao.loadUserByUsername(username);
+	}
+
+	// key value (key:체크이메일, value:생성코드)
+	public boolean verifyVal(String id, String code) {
+		String storedCode = redisTemplate.opsForValue().get(id);
+		return code.equals(storedCode);
+	}
+
+	public Object getSerializedValue(String key) {
+		// 직렬화된 데이터 조회
+		Object value = redisTemplate.opsForValue().get(key);
+		System.out.println(value);
+		// value가 직렬화된 객체라면, 역직렬화 작업을 해야 합니다.
+		return value;
+	}
+	
+	public String getRefreshToken(String username) {
+		String refreshToken = redisTemplate.opsForValue().get(username);
+		return refreshToken;
+	}
+
+}

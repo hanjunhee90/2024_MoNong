@@ -1,0 +1,29 @@
+package com.future.blue;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import com.future.blue.auth.service.IAuthService;
+import com.future.blue.auth.util.JwtUtil;
+import com.future.blue.auth.vo.AuthVO;
+
+@ControllerAdvice
+public class GlobalControllerAdvice {
+
+	@Autowired
+	IAuthService authService;
+
+    // 모든 페이지에서 공통으로 사용할 데이터
+    @ModelAttribute("userInfo")
+    public AuthVO userInfo(HttpServletRequest request) {
+     // 쿠키로부터 유저정보 추출해서 전달
+	    String accessToken = JwtUtil.extractToken(request);
+	    String username = JwtUtil.getUsernameFromToken(accessToken);
+	    AuthVO userInfo = authService.loadUserByUsername(username);
+
+        return userInfo;
+    }
+}

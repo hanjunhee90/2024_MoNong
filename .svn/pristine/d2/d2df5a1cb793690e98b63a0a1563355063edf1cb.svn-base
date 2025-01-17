@@ -1,0 +1,125 @@
+package com.future.blue.auth.web;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.future.blue.auth.dto.AuthDTO;
+import com.future.blue.auth.enums.Role;
+import com.future.blue.auth.service.IAuthService;
+import com.future.blue.auth.util.JwtUtil;
+import com.future.blue.auth.vo.AuthVO;
+import com.future.blue.auth.vo.KakaoVO;
+
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+	@Autowired
+	IAuthService authService;
+
+	private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();	
+		
+	@Autowired
+	private RedisTemplate<String, String> redisTemplate;
+	
+	
+	@PostMapping("/loginDo")
+    public String loginDo(@RequestParam String username, @RequestParam String password) {
+        AuthVO loginUser = authService.loadUserByUsername(username);
+        if (loginUser.getMemId().equals(username) && passwordEncoder.matches(password,loginUser.getMemPass())) {
+            Role userRole = loginUser.getMemRole();
+            String accessToken = JwtUtil.generateToken(username, userRole);
+            String refreshToken = JwtUtil.generateRefreshToken(username, userRole);
+            redisTemplate.opsForValue().set(username, refreshToken, 86400, TimeUnit.SECONDS);
+
+            return accessToken;
+        }
+        throw new RuntimeException("Invalid credentials");
+    }
+	
+	@PostMapping("/signupDo")
+	public String signupDo(@RequestBody AuthDTO user) {
+		String encodedPassword = passwordEncoder.encode(user.getMemPass());
+		user.setMemPass(encodedPassword);
+		authService.registerUser(user);
+		return "redirect:/login";
+	}
+	
+	@PostMapping("/findIdDo")
+	public String findIdDo(@RequestBody String memPhone) {
+		memPhone = memPhone.replace("\"", "");
+		AuthVO authVO = authService.findByUserMail(memPhone);
+		String memId = authVO.getMemId();
+		return memId;
+	}
+	
+	@PostMapping("/findPasswordDo")
+    public Boolean findPasswordDo(@RequestParam String memId, @RequestParam String memPhone) {
+		Map <String, String> IdAndPhone = new HashMap<>();
+		IdAndPhone.put("memId",memId);
+		IdAndPhone.put("memPhone",memPhone);
+		AuthVO authVO = authService.findPassword(IdAndPhone);
+		return authVO != null;
+    }
+
+	@PostMapping("/updatePassword")
+	public void updatePassword(@RequestParam String memId, @RequestParam String memPw) {
+		String encodedPassword = passwordEncoder.encode(memPw);
+		Map <String, String> IdAndPw = new HashMap<>();
+		IdAndPw.put("memId",memId);
+		IdAndPw.put("memPass",encodedPassword);
+		authService.updatePassword(IdAndPw);
+	}
+	
+	@PostMapping("/idCheck")
+	public String idCheck(@RequestBody String memId) {
+		memId = memId.replace("\"", "");
+		AuthVO authVO = authService.loadUserByUsername(memId);
+		if(authVO == null) {
+			return null;
+		}
+		return memId;
+	}
+	
+	@PostMapping("/kakaoLogin")
+    public String kakaoLogin(@RequestBody String kakaoAccessToken, HttpServletResponse response) {
+		try {
+			KakaoVO kakaoUser = authService.kakaoLogin(kakaoAccessToken);
+			
+			String memId = kakaoUser.getMemId();
+			Role memRole = kakaoUser.getMemRole();
+			
+			String accessToken = JwtUtil.generateToken(memId, memRole);
+			String refreshToken = JwtUtil.generateRefreshToken(memId, memRole);
+			redisTemplate.opsForValue().set(memId, refreshToken, 86400, TimeUnit.SECONDS);
+			return accessToken;
+		} catch (Exception e) {
+			System.out.println("Error: " + e.getMessage());
+			return "Login Failed";
+		}
+    }
+
+	
+}

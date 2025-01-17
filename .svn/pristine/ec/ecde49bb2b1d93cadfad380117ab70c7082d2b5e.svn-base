@@ -1,0 +1,54 @@
+package com.future.blue.push.vo;
+
+public class SubscriptionVO {
+	
+	private int id;               // 기본 키
+    private String memId;          // 사용자 ID
+    private String endpoint;       // 푸시 알림 엔드포인트
+    private String p256dhKey;      // 클라이언트 공개키
+    private String authKey;        // 클라이언트 인증 키
+    private String createDt;         // 생성일
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public String getMemId() {
+		return memId;
+	}
+	public void setMemId(String memId) {
+		this.memId = memId;
+	}
+	public String getEndpoint() {
+		return endpoint;
+	}
+	public void setEndpoint(String endpoint) {
+		this.endpoint = endpoint;
+	}
+	public String getP256dhKey() {
+		return p256dhKey;
+	}
+	public void setP256dhKey(String p256dhKey) {
+		this.p256dhKey = p256dhKey;
+	}
+	public String getAuthKey() {
+		return authKey;
+	}
+	public void setAuthKey(String authKey) {
+		this.authKey = authKey;
+	}
+	public String getCreateDt() {
+		return createDt;
+	}
+	public void setCreateDt(String createDt) {
+		this.createDt = createDt;
+	}
+	@Override
+	public String toString() {
+		return "SubscriptionVO [id=" + id + ", memId=" + memId + ", endpoint=" + endpoint + ", p256dhKey=" + p256dhKey
+				+ ", authKey=" + authKey + ", createDt=" + createDt + "]";
+	}
+
+    
+}

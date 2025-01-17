@@ -1,0 +1,108 @@
+package com.future.blue.mypage.web;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.future.blue.auth.service.AuthServiceImpl;
+import com.future.blue.auth.util.JwtUtil;
+import com.future.blue.common.util.MemberUtil;
+import com.future.blue.mypage.service.IMypageService;
+import com.future.blue.mypage.service.MypageServiceImpl;
+import com.future.blue.mypage.vo.MypageChatVO;
+import com.future.blue.mypage.vo.MypageTradeVO;
+import com.future.blue.mypage.vo.MypageVO;
+
+@Controller
+public class MypageController {
+	
+	@Autowired
+	IMypageService mypageService;
+	
+	@GetMapping("/mypage/main")
+	public String mypageMain(HttpServletRequest request) {
+		String token = JwtUtil.extractToken(request);
+		return "mypage/main";
+	}
+	
+	@GetMapping("/mypage/info")
+	public String mypageInfo() {
+		return "mypage/info";
+	}
+	
+	@GetMapping("/mypage/trade")
+	public String mypageTrade(HttpServletRequest request, Model model) {
+		String memId = MemberUtil.getMemIdFromCookie(request);
+		List<MypageTradeVO> totalVO = mypageService.getTradeData(memId);
+		List<MypageTradeVO> sellingVO = new ArrayList<>();
+		List<MypageTradeVO> requestVO = new ArrayList<>();
+		List<MypageTradeVO> completeVO = new ArrayList<>();
+		for (int i = 0; i < totalVO.size(); i++) {
+			MypageTradeVO tradeVO = totalVO.get(i);
+			if(tradeVO.getProdStatus().equals("S")) {
+				sellingVO.add(tradeVO);
+			}else if(tradeVO.getProdStatus().equals("R")) {
+				requestVO.add(tradeVO);
+			}else if(tradeVO.getProdStatus().equals("C")) {
+				completeVO.add(tradeVO);
+			}
+		}
+		model.addAttribute("sellingVO", sellingVO);
+		model.addAttribute("requestVO", requestVO);
+		model.addAttribute("completeVO", completeVO);
+		return "mypage/trade";
+	}
+
+	@GetMapping("/mypage/change")
+	public String mypageChange() {
+		return "mypage/change";
+	}
+	
+	@PostMapping("/mypage/changeDo")
+	public void mypageChangeDo(@RequestParam String memId, @RequestParam String memNic, @RequestParam String memAddr, @RequestParam String memPhone) {
+		MypageVO vo = mypageService.getMyData(memId);
+		vo.setMemNic(memNic);
+		vo.setMemAddr(memAddr);
+		vo.setMemPhone(memPhone);
+		mypageService.changeInfo(vo);
+	}
+	
+	@GetMapping("/mypage/chat")
+	public String mypageChatView(HttpServletRequest request, Model model) {
+		String memId = MemberUtil.getMemIdFromCookie(request);
+		List<MypageChatVO> chatVOList = mypageService.getChatData(memId);
+		List<MypageChatVO> totalChatList = new ArrayList<>();
+		List<MypageChatVO> sellChatList = new ArrayList<>();
+		List<MypageChatVO> buyChatList = new ArrayList<>();
+		for (int i = 0; i < chatVOList.size(); i++) {
+			MypageChatVO chatVO = chatVOList.get(i);
+			if (!chatVO.getMemId().equals(memId)) {
+				totalChatList.add(chatVO);
+			}else if (chatVO.getChatSeller().equals(memId) && !chatVO.getMemId().equals(memId)) {
+				sellChatList.add(chatVO);
+			}else if (chatVO.getChatBuyer().equals(memId) && !chatVO.getMemId().equals(memId)) {
+				buyChatList.add(chatVO);
+			}
+		}
+		model.addAttribute("totalChatList", totalChatList);
+		model.addAttribute("sellChatList", sellChatList);
+		model.addAttribute("buyChatList", buyChatList);
+		System.out.println(totalChatList);
+		System.out.println(sellChatList);
+		System.out.println(buyChatList);
+		return "mypage/chat";
+	}
+}

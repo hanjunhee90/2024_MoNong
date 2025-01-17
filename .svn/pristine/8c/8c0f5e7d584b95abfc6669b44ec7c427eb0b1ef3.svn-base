@@ -1,0 +1,22 @@
+# 기상 관측지점 정보(.csv)를 db에 담는 작업
+import pandas as pd
+import cx_Oracle
+
+dsn = cx_Oracle.makedsn('192.168.0.44', '1521', 'xe')
+connection = cx_Oracle.connect('blue', 'blue', dsn)
+cursor = connection.cursor()
+
+df = pd.read_csv('./OBSERVATION_POINT(충북).csv', encoding='euc-kr')
+
+for index, row in df.iterrows():
+    cursor.execute("""
+        INSERT INTO OBSERVATION_INFO (OBSERVATION_id, OBSERVATION_point, OBSERVATION_location)
+        VALUES (:1, :2, :3)
+    """, (row['번호'], row['지점'], row['위치']))
+
+connection.commit()
+
+cursor.close()
+connection.close()
+
+print("CSV 데이터가 OBSERVATION_INFO 테이블에 성공적으로 삽입되었습니다.")

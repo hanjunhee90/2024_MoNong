@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.future.blue.board.dao.BoardDAO">
+
+    <!-- 전체 게시글 목록 (제목 검색 및 페이징 처리) -->
+    <select id="getBoardListPaged" resultType="com.future.blue.board.vo.BoardVO" parameterType="com.future.blue.board.vo.SearchVO">
+        SELECT *
+		FROM (  SELECT  rownum as rnum, a.*
+		        FROM(SELECT board_id 
+			            , BOARD_CATEGORY
+			            , BOARD_WRITER
+			            , BOARD_TITLE
+			            , BOARD_PASS
+			            , BOARD_CONTENTS
+			            , CREATE_DT
+			            , UPDATE_DT
+			            , MEM_ID
+			            , BOARD_HIT
+			            , BOARD_LIKE
+			            , USE_YN  
+			        FROM BOARD
+			        WHERE 1=1
+		             <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(title)">
+			   		 AND BOARD_TITLE  LIKE '%' || #{title} || '%'
+					 </if>
+		             ORDER BY board_id DESC
+		            ) a
+		      ) b
+		WHERE rnum BETWEEN #{firstRow} AND #{lastRow}       
+    </select>
+
+    <!-- 게시글의 총 개수 (검색 조건에 맞게 게시글 수 카운트 ) -->
+    <select id="getTotalCount" resultType="int"  parameterType="com.future.blue.board.vo.SearchVO">
+    		SELECT  COUNT(*)
+	        FROM BOARD
+	        WHERE 1=1
+            <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(title)">
+	   		AND BOARD_TITLE  LIKE '%' || #{title} || '%'
+			</if>
+    </select>
+
+    <!-- 게시글 상세 조회 -->
+    <select id="getBoardDetail" resultType="com.future.blue.board.vo.BoardVO">
+        SELECT * 
+        FROM BOARD
+        WHERE board_id = #{boardId}
+    </select>
+
+    <!-- 게시글 작성 -->
+    <insert id="createBoard" parameterType="com.future.blue.board.vo.BoardVO">
+        INSERT INTO BOARD (writer, title, contents, category, created_date)
+        VALUES (#{writer}, #{title}, #{contents}, #{category}, NOW())
+    </insert>
+
+    <!-- 게시글 수정 -->
+    <update id="updateBoard" parameterType="com.future.blue.board.vo.BoardVO">
+        UPDATE BOARD
+        SET title = #{title},
+            contents = #{contents},
+            category = #{category}
+        WHERE board_id = #{boardId}
+    </update>
+
+    <!-- 게시글 삭제 -->
+    <delete id="deleteBoard" parameterType="int">
+        DELETE FROM BOARD
+        WHERE board_id = #{boardId}
+    </delete>
+
+    <!-- 파일 추가 -->
+    <insert id="addBoardFile" parameterType="com.future.blue.board.vo.BoardFileVO">
+        INSERT INTO BOARD_FILE (board_id, file_name, file_path, upload_date)
+        VALUES (#{boardId}, #{fileName}, #{filePath}, NOW())
+    </insert>
+
+    <!-- 특정 게시글의 파일 목록 조회 -->
+    <select id="getBoardFiles" resultType="com.future.blue.board.vo.BoardFileVO">
+        SELECT * 
+        FROM BOARD_FILE
+        WHERE board_id = #{boardId}
+    </select>
+
+    <!-- 댓글 작성 -->
+    <insert id="addComment" parameterType="com.future.blue.board.vo.BoardCommentVO">
+        INSERT INTO BOARD_COMMENT (board_id, writer, content, created_date)
+        VALUES (#{boardId}, #{writer}, #{content}, NOW())
+    </insert>
+
+    <!-- 특정 게시글의 댓글 목록 조회 -->
+    <select id="getComments" resultType="com.future.blue.board.vo.BoardCommentVO">
+        SELECT * 
+        FROM BOARD_COMMENT
+        WHERE board_id = #{boardId}
+        ORDER BY created_date ASC
+    </select>
+
+    <!-- 댓글 삭제 -->
+    <delete id="deleteComment" parameterType="int">
+        DELETE FROM BOARD_COMMENT
+        WHERE comment_id = #{commentId}
+    </delete>
+
+    <!-- 좋아요 추가 -->
+    <insert id="addLike" parameterType="com.future.blue.board.vo.BoardLikeVO">
+        INSERT INTO BOARD_LIKE (board_id, like_mem_id, liked_date)
+        VALUES (#{boardId}, #{likeMemId}, NOW())
+    </insert>
+
+    <!-- 좋아요 삭제 -->
+    <delete id="removeLike" parameterType="com.future.blue.board.vo.BoardLikeVO">
+        DELETE FROM BOARD_LIKE
+        WHERE board_id = #{boardId} AND like_mem_id = #{likeMemId}
+    </delete>
+
+    <!-- 특정 게시글의 좋아요 수 조회 -->
+    <select id="getLikeCount" resultType="int">
+        SELECT COUNT(*) 
+        FROM BOARD_LIKE
+        WHERE board_id = #{boardId}
+    </select>
+
+    <!-- 특정 사용자의 좋아요 여부 확인 (1이면 좋아요, 0이면 좋아요 아님) -->
+    <select id="isLikedByUser" resultType="int">
+        SELECT COUNT(*)
+        FROM BOARD_LIKE
+        WHERE board_id = #{boardId} AND like_mem_id = #{memId}
+    </select>
+
+    <!-- 조회수 증가 -->
+    <update id="increaseBoardHit">
+        UPDATE BOARD
+        SET hit = hit + 1
+        WHERE board_id = #{boardId}
+    </update>
+
+</mapper>

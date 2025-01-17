@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.future.blue.market.dao.IMarketDAO">
+    
+    <!-- resultMap을 사용하여 pdlt_path를 pdltPath에 매핑 -->
+    <resultMap id="MarketResultMap" type="MarketVO">
+        <result property="pdltPath" column="pdlt_path" />
+        <result property="prceRegYmd" column="prce_reg_ymd" />
+        <result property="pdltCode" column="pdlt_code" />
+        <result property="pdltNm" column="pdlt_nm" />
+        <result property="pdltCtgCode" column="pdlt_ctg_code" />
+        <result property="pdltCtgNm" column="pdlt_ctg_nm" />
+        <result property="dsbnStepActoUnitNm" column="dsbn_step_acto_unit_nm" />
+        <result property="avrgPrce" column="avrg_prce" />
+        <result property="spcsCode" column="spcs_code" />
+        <result property="spcsNm" column="spcs_nm" />
+        <result property="wsrtExmnSeCode" column="wsrt_exmn_se_code" />
+        <result property="exmnSeNm" column="exmn_se_nm" />
+        <result property="gradCode" column="grad_code" />
+        <result property="gradNm" column="grad_nm" />
+        <result property="dsbnStepActoWt" column="dsbn_step_acto_wt" />
+        <result property="tdyLwetPrce" column="tdy_lwet_prce" />
+        <result property="tdyMaxPrce" column="tdy_max_prce" />
+        <result property="etlLdgDt" column="etl_ldg_dt" />
+    </resultMap>
+
+    <!-- selectCode 쿼리 -->
+    <select id="selectCode" resultMap="MarketResultMap">
+        SELECT pdlt_ctg_code, pdlt_ctg_nm
+        FROM daily_product_prices2
+        WHERE pdlt_ctg_code IN ('100', '200', '300', '400')
+          AND exmn_se_nm = '도매'
+        GROUP BY pdlt_ctg_code, pdlt_ctg_nm
+        ORDER BY pdlt_ctg_code
+    </select>
+    
+    <!-- selectNm 쿼리 -->
+    <select id="selectNm" parameterType="string" resultMap="MarketResultMap">
+        SELECT DISTINCT pdlt_code, pdlt_nm
+        FROM daily_product_prices2
+        WHERE pdlt_ctg_code = #{pdltCtgCode}
+        ORDER BY pdlt_nm
+    </select>
+    
+    <!-- searchProduct 쿼리 -->
+    <select id="searchProduct" parameterType="MarketVO" resultMap="MarketResultMap">
+        SELECT 
+            dpp.prce_reg_ymd,
+            dpp.pdlt_code,
+            dpp.pdlt_nm,
+            dpp.pdlt_ctg_code,
+            dpp.pdlt_ctg_nm,
+            dpp.dsbn_step_acto_unit_nm,
+            AVG(dpp.avrg_prce) AS avrg_prce,
+            pi.pdlt_path
+        FROM daily_product_prices2 dpp
+        INNER JOIN product_images2 pi
+            ON dpp.pdlt_nm = pi.pdlt_nm
+        WHERE TO_DATE(dpp.prce_reg_ymd, 'YYYY-MM-DD') BETWEEN 
+            TO_DATE(#{prceRegYmd}, 'YYYY-MM-DD') - INTERVAL '6' DAY
+            AND TO_DATE(#{prceRegYmd}, 'YYYY-MM-DD')
+            AND dpp.pdlt_ctg_code = #{pdltCtgCode}
+            AND dpp.pdlt_code = #{pdltCode}
+            AND dpp.exmn_se_nm = '도매'
+        GROUP BY 
+            dpp.prce_reg_ymd,
+            dpp.pdlt_code,
+            dpp.pdlt_nm,
+            dpp.dsbn_step_acto_unit_nm,
+            dpp.pdlt_ctg_code,
+            dpp.pdlt_ctg_nm,
+            pi.pdlt_path
+        ORDER BY dpp.prce_reg_ymd DESC
+    </select>
+    
+</mapper>

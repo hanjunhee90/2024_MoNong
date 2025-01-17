@@ -1,0 +1,24 @@
+package com.future.blue.auth.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.future.blue.auth.dao.IAuthDAO;
+import com.future.blue.auth.dto.AuthDTO;
+import com.future.blue.auth.vo.AuthVO;
+
+@Service("IAuthService")
+public class AuthServiceImpl implements IAuthService {
+	@Autowired
+	IAuthDAO dao;
+	
+	@Override
+	public AuthVO loadUserByUsername(String username) {
+		return dao.loadUserByUsername(username);
+	}
+	
+	@Override
+	public void registerUser(AuthDTO authDTO) {
+		dao.registerUser(authDTO);
+    }
+}

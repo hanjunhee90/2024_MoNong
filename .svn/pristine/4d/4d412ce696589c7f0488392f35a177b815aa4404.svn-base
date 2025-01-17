@@ -1,0 +1,79 @@
+package com.future.blue.mypage.web;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.future.blue.auth.service.AuthServiceImpl;
+import com.future.blue.auth.util.JwtUtil;
+import com.future.blue.common.util.MemberUtil;
+import com.future.blue.mypage.service.IMypageService;
+import com.future.blue.mypage.service.MypageServiceImpl;
+import com.future.blue.mypage.vo.MypageChatVO;
+import com.future.blue.mypage.vo.MypageVO;
+
+@Controller
+public class MypageController {
+	
+	@Autowired
+	IMypageService mypageService;
+	
+	@GetMapping("/mypage/main")
+	public String mypageMain(HttpServletRequest request) {
+		String token = JwtUtil.extractToken(request);
+		return "mypage/main";
+	}
+	
+	@GetMapping("/mypage/info")
+	public String mypageInfo() {
+		return "mypage/info";
+	}
+	
+	@GetMapping("/mypage/trade")
+	public String mypageTrade() {
+		return "mypage/trade";
+	}
+
+	@GetMapping("/mypage/change")
+	public String mypageChange() {
+		return "mypage/change";
+	}
+	
+	@PostMapping("/mypage/changeDo")
+	public void mypageChangeDo(@RequestParam String memId, @RequestParam String memNic, @RequestParam String memAddr, @RequestParam String memPhone) {
+		MypageVO vo = mypageService.getMyData(memId);
+		vo.setMemNic(memNic);
+		vo.setMemAddr(memAddr);
+		vo.setMemPhone(memPhone);
+		mypageService.changeInfo(vo);
+	}
+	
+	@GetMapping("/mypage/chat")
+	public String mypageChatView(HttpServletRequest request, Model model) {
+		String memId = MemberUtil.getMemIdFromCookie(request);
+		List<MypageChatVO> chatVOList = mypageService.getChatData(memId);
+		List<MypageChatVO> chatList = new ArrayList<>();
+		for (int i = 0; i < chatVOList.size(); i++) {
+			MypageChatVO chatVO = chatVOList.get(i);
+			if (!chatVO.getMemId().equals(memId)) {
+				chatList.add(chatVO);
+			}
+		}
+		model.addAttribute("chatList", chatList);
+		System.out.println(chatList);
+		return "mypage/chat";
+	}
+}

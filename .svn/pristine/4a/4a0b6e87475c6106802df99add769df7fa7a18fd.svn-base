@@ -1,0 +1,50 @@
+# 데이터 탐색을 위한 목적
+# 통제변수: 지역, 유통단계
+
+import requests
+import pandas as pd
+import xml.etree.ElementTree as ET
+
+# API 요청 URL과 기본 파라미터
+base_url = "https://www.kamis.or.kr/service/price/xml.do"
+params = {
+    "action": "dailyPriceByCategoryList",
+    "p_product_cls_code": "02",  # 제품 분류 코드
+    "p_item_category_code": "200",  # 부류 코드
+    "p_country_code": "2501",  # 지역 코드
+    "p_regday": "2024-11-27",  # 조회 날짜
+    "p_convert_kg_yn": "N",  # 단위 변환 여부
+    "p_cert_key": "21980a3f-3bba-4994-aa23-099eb549518c",  # 인증 키
+    "p_cert_id": "5072",  # 인증 ID
+    "p_returntype": "xml",  # 응답 형식
+}
+
+# API 요청
+try:
+    response = requests.get(base_url, params=params)
+    response.raise_for_status()  # 요청 성공 여부 확인
+    xml_data = response.content  # XML 데이터를 가져옴
+
+    # XML 파싱
+    root = ET.fromstring(xml_data)
+    data_list = []
+
+    # XML 데이터를 딕셔너리로 변환
+    for item in root.findall(".//item"):
+        data = {child.tag: child.text for child in item}
+        data_list.append(data)
+
+    # 데이터프레임으로 변환
+    df = pd.DataFrame(data_list)
+
+    # 엑셀 파일로 저장
+    excel_file = "daily_price_data(대전11월).xlsx"
+    df.to_excel(excel_file, index=False, engine="openpyxl")
+    print(f"데이터가 성공적으로 {excel_file}에 저장되었습니다.")
+
+except requests.exceptions.RequestException as e:
+    print(f"API 요청 중 오류 발생: {e}")
+except ET.ParseError as e:
+    print(f"XML 파싱 중 오류 발생: {e}")
+except ValueError as e:
+    print(f"데이터 변환 중 오류 발생: {e}")

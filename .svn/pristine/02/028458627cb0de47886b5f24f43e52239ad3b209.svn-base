@@ -1,0 +1,647 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ page session="false"%>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채팅 화면</title>
+<style>
+/* ---------- 전체 스타일 ---------- */
+    body {
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      margin: 20px auto;
+      max-width: 800px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+
+    /* 상태 바 */
+    .status-bar {
+      background-color: #4CAF50;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+    .back-button {
+      margin-right: 10px;
+    }
+    .chat-seller {
+      margin-left: 5px;
+    }
+    .trust-level {
+      margin-left: 10px;
+    }
+
+    /* 물품 정보 */
+    .item-info {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+      padding: 15px 0;
+      margin-bottom: 10px;
+    }
+    .item-info img {
+      width: 100px; height: 100px;
+      border-radius: 10px;
+      margin-right: 15px;
+      object-fit: cover;
+    }
+    .item-details {
+      flex: 1;
+    }
+    .item-details .title {
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    /* 거래 진행도 (progress) */
+    .progress {
+      display: flex;
+      justify-content: space-evenly;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #E8F5E9;
+      border-radius: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .progress button {
+      width: 150px;
+      height: 50px;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      background: linear-gradient(135deg, #FFEB3B, #FFC107);
+      border: 2px solid #FFD54F;
+      border-radius: 25px;
+      padding: 5px 15px;
+      cursor: pointer;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+    .progress button:hover {
+      background: linear-gradient(135deg, #FFC107, #FFA000);
+      border-color: #FFB300;
+    }
+    .progress button.disabled {
+      background: linear-gradient(135deg, #C8E6C9, #A5D6A7);
+      color: #ffffff;
+      cursor: not-allowed;
+      border: 2px dashed #A5D6A7;
+    }
+
+    /* 채팅 영역 */
+    .chat-container {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .chat-container ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .chat-container li {
+      margin-bottom: 10px;
+    }
+    .chat-box {
+      display: inline-block;
+      font-size: 14px;
+      line-height: 1.4;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin: 0;
+    }
+
+    /* 약속 메시지 */
+    .appointment-message {
+      background-color: #ffeb3b;
+      color: #333;
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .confirm-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .confirm-button:hover {
+      background-color: #45a049;
+    }
+
+    /* 입력창 */
+    .input-container {
+      display: flex;
+      align-items: center;
+      background-color: #f4f4f4;
+      border-top: 1px solid #ddd;
+      padding: 10px;
+    }
+    .input-container input {
+      flex: 1;
+      padding: 10px;
+      margin: 0 10px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      outline: none;
+      font-size: 14px;
+    }
+    .input-container button {
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .input-container img {
+      width: 25px;
+      height: 25px;
+    }
+
+    /* 이미지 모달 */
+    .image-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+    }
+    .image-modal .modal-content {
+      max-width: 50%;
+      max-height: 50%;
+      border: 3px solid #fff;
+      border-radius: 10px;
+      object-fit: contain;
+      cursor: pointer;
+    }
+    .modal-close-button {
+      position: absolute;
+      top: 20px; right: 20px;
+      background-color: #fff;
+      color: #333;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .modal-close-button:hover {
+      background-color: #ddd;
+    }
+/* 반응형 */
+@media ( max-width : 768px) {
+	.progress button {
+		font-size: 10px;
+		padding: 8px;
+	}
+	body {
+		font-family: Arial, sans-serif;
+		background-color: #f9f9f9;
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+		margin: 0;
+	}
+	.item-info img {
+		width: 80px;
+		height: 80px;
+	}
+	.message .content {
+		max-width: 80%;
+	}
+	.progress div {
+		font-size: 10px;
+	}
+	
+}
+</style>
+</head>
+
+<body id="page-top">
+<jsp:include page="/WEB-INF/inc/common/header.jsp"></jsp:include>
+<jsp:include page="/WEB-INF/inc/modal/promiseModal.jsp"></jsp:include>
+
+<!-- 메인 컨테이너 -->
+<div class="container">
+  <!-- 서버에서 넘겨준 memId, chatId, roomView 등 -->
+  <c:set var="memId" value="${userInfo.memId}" />
+
+  <!-- 상태 바 -->
+  <div class="status-bar">
+    <button class="back-button" onclick="history.back()">←</button>
+    <span class="chat-seller">아이디: ${roomView.chatSeller}</span>
+    <span class="trust-level">신뢰도: 
+      <c:choose>
+        <c:when test="${not empty roomView.memReliability}">
+          ${roomView.memReliability}
+        </c:when>
+        <c:otherwise>0</c:otherwise>
+      </c:choose>
+    </span>
+  </div>
+
+  <!-- 물품 정보 -->
+  <div class="item-info">
+    <div class="image-container">
+      <img src="${roomView.prodPhotoPath}" alt="상품 이미지" />
+    </div>
+    <div class="item-details">
+      <div class="title">${roomView.prodName}</div>
+      <div style="font-size:1.2rem; margin-top:0.5rem;">${roomView.prodPrice}원</div>
+      <div style="font-size:1rem; color:#555; margin-top:0.5rem;">${roomView.prodPlace}</div>
+    </div>
+  </div>
+
+  <!-- 거래 진행도 버튼들 -->
+  <div class="progress" id="progress">
+    <button id="appointmentForm" class="progress-step" onclick="handleAppointment()">약속잡기</button>
+    <button id="completeButton" class="progress-step disabled" onclick="handleComplete()">거래완료</button>
+    <button id="reviewButton" class="progress-step disabled" onclick="handleReview()">후기 보내기</button>
+  </div>
+
+  <!-- 채팅 영역 -->
+  <div class="chat-container">
+    <div class="content chatcontent">
+      <!-- 기존 채팅 로그 뿌리기 -->
+      <c:forEach var="chat" items="${chatList}">
+        <!-- 내가 보낸 메시지 -->
+        <c:if test="${memId eq chat.tmSender}">
+          <ul>
+            <li style="margin-bottom:10px; text-align:right;">
+              <strong>${chat.tmSender }</strong>
+              <div>
+                <c:choose>
+                  <c:when test="${chat.tmContentType eq 'TEXT'}">
+                    <p class="chat-box text-left p-3">${chat.tmContent }</p>
+                  </c:when>
+                  <c:when test="${chat.tmContentType eq 'IMG'}">
+                    <img src="${chat.tmContent }" width="100" style="cursor:pointer;" 
+                         onclick="openImageInNewTab('${chat.tmContent}')">
+                  </c:when>
+                  <c:when test="${chat.tmContentType eq 'APPOINTMENT'}">
+                    <span class="appointment-message">${chat.tmContent }</span>
+                    <!-- tmStatus 표시 -->
+                    <c:if test="${chat.tmStatus eq 'REQUEST'}">
+                      <span style="color:orange;">(약속 요청중)</span>
+                    </c:if>
+                    <c:if test="${chat.tmStatus eq 'R'}">
+                      <span style="color:green;font-weight:bold;">(예약중)</span>
+                    </c:if>
+                    <c:if test="${chat.tmStatus eq 'C'}">
+                      <span style="color:red;font-weight:bold;">(거래완료)</span>
+                    </c:if>
+                  </c:when>
+                  <c:otherwise>
+                    <p class="chat-box">${chat.tmContent }</p>
+                  </c:otherwise>
+                </c:choose>
+                <br>
+                <strong>${chat.tmDate }</strong>
+              </div>
+            </li>
+          </ul>
+        </c:if>
+        <!-- 상대방 메시지 -->
+        <c:if test="${memId ne chat.tmSender}">
+          <ul>
+            <li style="margin-bottom:10px; text-align:left;">
+              <strong>${chat.tmSender }</strong>
+              <div>
+                <c:choose>
+                  <c:when test="${chat.tmContentType eq 'TEXT'}">
+                    <p class="chat-box bg-light p-3">${chat.tmContent }</p>
+                  </c:when>
+                  <c:when test="${chat.tmContentType eq 'IMG'}">
+                    <img src="${chat.tmContent }" width="100" style="cursor:pointer;"
+                         onclick="openImageInNewTab('${chat.tmContent}')">
+                  </c:when>
+                  <c:when test="${chat.tmContentType eq 'APPOINTMENT'}">
+                    <span class="appointment-message">${chat.tmContent }</span>
+                    <!-- 약속 상태별로 버튼/표시 다름 -->
+                    <c:if test="${chat.tmStatus eq 'REQUEST'}">
+                      <button class="confirm-button" 
+                              onclick="confirmAppointment('${chat.tmChatId}')">확인</button>
+                    </c:if>
+                    <c:if test="${chat.tmStatus eq 'R'}">
+                      <span style="color:green;font-weight:bold;">(예약중)</span>
+                    </c:if>
+                    <c:if test="${chat.tmStatus eq 'C'}">
+                      <span style="color:red;font-weight:bold;">(거래완료)</span>
+                    </c:if>
+                  </c:when>
+                  <c:otherwise>
+                    <p class="chat-box">${chat.tmContent }</p>
+                  </c:otherwise>
+                </c:choose>
+                <br>
+                <strong>${chat.tmDate }</strong>
+              </div>
+            </li>
+          </ul>
+        </c:if>
+      </c:forEach>
+    </div>
+  </div>
+
+  <!-- 입력창 -->
+  <div class="input-container">
+    <button id="addImageButton" style="background:none;border:none;cursor:pointer;">
+      <img src="https://cdn-icons-png.flaticon.com/512/1828/1828817.png" alt="추가 버튼">
+    </button>
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+    <input type="text" id="msgi" placeholder="메시지를 입력해주세요">
+    <button class="emoji-button" style="background:none;border:none;cursor:pointer;">
+      <img src="https://cdn-icons-png.flaticon.com/512/742/742751.png" alt="이모티콘">
+    </button>
+    <button id="btnSend" style="background:none;border:none;cursor:pointer;">
+      <img src="https://cdn-icons-png.flaticon.com/512/786/786205.png" alt="전송">
+    </button>
+  </div>
+</div>
+
+<!-- 이미지 모달 (클릭해서 확대) -->
+<div id="imageModal" class="image-modal">
+  <button class="modal-close-button" onclick="closeModal()">닫기</button>
+  <img id="modalImage" class="modal-content" />
+</div>
+
+<jsp:include page="/WEB-INF/inc/common/footer.jsp"></jsp:include>
+
+<!-- jQuery CDN 추가 -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- SockJS와 STOMP CDN 추가 -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script>
+//========== 전역 변수 ==========
+var tmChatId = "${chatId}";
+var memId = "${memId}";
+var memNm = "테스트 사용자"; // 필요 시 세션에서 닉네임
+var client = null;
+// 서버에서 가져온 거래 상태 (N, REQUEST, R, C 등)
+var tmStatus = "${roomView.tmStatus != null ? roomView.tmStatus : 'N'}";
+
+// 문서 준비
+$(document).ready(function() {
+  // 1) STOMP 연결
+  var sock = new SockJS("/endpoint");
+  client = Stomp.over(sock);
+
+  client.connect({"userId": memId, "tmChatId": tmChatId}, function() {
+    console.log("WebSocket 연결 성공");
+
+    // 2) 구독
+    client.subscribe("/subscribe/chat/" + tmChatId, function(chat) {
+      var body = JSON.parse(chat.body);
+      console.log("받은 메시지:", body);
+
+      // 새 메시지 렌더링
+      var messageHtml = renderList(body);
+      $(".chat-container .content ul:last").append(messageHtml);
+      scrollDown();
+
+      // 약속/거래 상태 갱신
+      if (body.tmContentType === "APPOINTMENT") {
+        if (body.tmStatus === "R") {
+          tmStatus = "R";
+          $("#appointmentForm").addClass("disabled");
+          $("#completeButton").removeClass("disabled");
+        } else if (body.tmStatus === "C") {
+          tmStatus = "C";
+          $("#completeButton").addClass("disabled");
+          $("#reviewButton").removeClass("disabled");
+        }
+      }
+    });
+  }, function(error) {
+    console.error("WebSocket 연결 실패:", error);
+    alert("채팅 서버와 연결할 수 없습니다.");
+  });
+
+  // 메시지 전송
+  $("#btnSend").click(sendMessage);
+  $("#msgi").keydown(function(e) {
+    if(e.keyCode === 13) sendMessage();
+  });
+
+  // 이미지 업로드
+  $("#addImageButton").click(function() {
+    $("#fileInput").click();
+  });
+  $("#fileInput").change(function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    var fileType = file.type;
+    var validTypes = ["image/jpeg", "image/png", "image/gif", "image/jpg"];
+    if (validTypes.indexOf(fileType) < 0) {
+      alert("이미지 파일만 업로드 가능합니다.");
+      $(this).val("");
+      return;
+    }
+
+    var formData = new FormData();
+    formData.append("file", file);
+    formData.append("tmSender", memId);
+    formData.append("tmChatId", tmChatId);
+
+    $.ajax({
+      url: "/files/upload",
+      type: "POST",
+      data: formData,
+      dataType: "json",
+      processData: false,
+      contentType: false,
+      success: function(res) {
+        // 업로드 성공 → STOMP로 메시지 전송
+        client.send("/app/hello/" + tmChatId, {}, JSON.stringify({
+          tmContent: res.imagePath,
+          tmContentType: "IMG",
+          tmSender: memId,
+          tmChatId: tmChatId,
+          memNm: memNm
+        }));
+      },
+      error: function(err) {
+        console.log(err);
+      }
+    });
+  });
+});
+
+// ========== 메시지 전송 함수 ==========
+function sendMessage() {
+  var msg = $("#msgi").val().trim();
+  if (!msg) return;
+
+  client.send("/app/hello/" + tmChatId, {}, JSON.stringify({
+    tmContent: msg,
+    tmSender: memId,
+    tmContentType: "TEXT",
+    tmChatId: tmChatId,
+    memNm: memNm
+  }));
+  $("#msgi").val("");
+}
+
+// ========== 메시지 렌더링 ========== 
+function renderList(vo) {
+  var content = "";
+  // 약속 메시지
+  if (vo.tmContentType === "APPOINTMENT") {
+    content = appointmentRender(vo);
+  } 
+  // 이미지
+  else if (vo.tmContentType === "IMG") {
+    content = "<img src='" + vo.tmContent + "' width='100' style='cursor:pointer;' onclick=\"openImageInNewTab('" + vo.tmContent + "')\">";
+  } 
+  // 일반 텍스트
+  else {
+    content = "<p class='chat-box'>" + vo.tmContent + "</p>";
+  }
+
+  var str = "";
+  // 내가 보낸 메시지
+  if(vo.tmSender === memId) {
+    str += "<li style='margin-bottom:10px; text-align:right;'>";
+    str += "<strong>" + vo.tmSender + "</strong>";
+    str += "<div>" + content + "</div>";
+    str += "<strong>" + (vo.tmDate || "") + "</strong>";
+    str += "</li>";
+  } 
+  // 상대방 메시지
+  else {
+    str += "<li style='margin-bottom:10px; text-align:left;'>";
+    str += "<strong>" + vo.tmSender + "</strong>";
+    str += "<div>" + content + "</div>";
+    str += "<strong>" + (vo.tmDate || "") + "</strong>";
+    str += "</li>";
+  }
+  return str;
+}
+
+// 약속 메시지 렌더
+function appointmentRender(vo) {
+  // 상태: REQUEST, R, C ...
+  var html = "<span class='appointment-message'>" + vo.tmContent + "</span>";
+  if(vo.tmStatus === "REQUEST") {
+    if(vo.tmSender !== memId) {
+      // 확인 버튼
+      html += " <button class='confirm-button' onclick=\"confirmAppointment('" + vo.tmChatId + "')\">확인</button>";
+    } else {
+      html += " <span style='color:orange;'>(요청중)</span>";
+    }
+  } else if(vo.tmStatus === "R") {
+    // 예약중
+    html += " <span style='color:green;font-weight:bold;'>(예약중)</span>";
+  } else if(vo.tmStatus === "C") {
+    // 거래완료
+    html += " <span style='color:red;font-weight:bold;'>(거래완료)</span>";
+  }
+  return html;
+}
+
+// 스크롤 맨아래
+function scrollDown() {
+  var container = document.querySelector(".chat-container .content");
+  if(container) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+// 약속잡기 버튼
+function handleAppointment() {
+  // 만약 이미 R 또는 C면 불가
+  if(tmStatus === "R") {
+    alert("이미 예약 중입니다!");
+    return;
+  }
+  if(tmStatus === "C") {
+    alert("이미 거래 완료된 상태입니다!");
+    return;
+  }
+  // Bootstrap 모달 열기
+  var modalObj = new bootstrap.Modal(document.getElementById("promiseModal"));
+  modalObj.show();
+}
+
+// "확인" 버튼 (약속 수락)
+function confirmAppointment(chatId) {
+  client.send("/app/hello/" + chatId, {}, JSON.stringify({
+    tmContent: "약속 확인되었습니다.",
+    tmSender: memId,
+    tmContentType: "APPOINTMENT",
+    tmStatus: "R",
+    tmChatId: chatId
+  }));
+}
+
+// 거래완료 버튼
+function handleComplete() {
+  if(tmStatus !== "R") {
+    alert("약속중 상태가 아니므로 완료할 수 없습니다!");
+    return;
+  }
+  // tmStatus='C' 전송
+  client.send("/app/hello/" + tmChatId, {}, JSON.stringify({
+    tmContent: "거래 완료",
+    tmSender: memId,
+    tmContentType: "APPOINTMENT",
+    tmStatus: "C",
+    tmChatId: tmChatId
+  }));
+}
+
+// 후기 버튼
+function handleReview() {
+  if(tmStatus !== "C") {
+    alert("거래가 완료된 상태에서만 후기 작성 가능합니다!");
+    return;
+  }
+  // 후기 작성 로직
+  alert("후기 작성 로직 or 모달");
+}
+
+// 이미지 크게보기
+$(document).on("click", ".chat-container img", function() {
+  var imgSrc = $(this).attr("src");
+  openModal(imgSrc);
+});
+function openModal(imageSrc) {
+  $("#modalImage").attr("src", imageSrc);
+  $("#imageModal").fadeIn();
+}
+function closeModal() {
+  $("#imageModal").fadeOut();
+}
+function openImageInNewTab(imageSrc) {
+  window.open(imageSrc, "_blank");
+}
+</script>
+</body>
+</html>

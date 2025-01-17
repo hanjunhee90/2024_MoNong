@@ -1,0 +1,11 @@
+package com.future.blue.auth.service;
+
+import com.future.blue.auth.vo.AuthVO;
+
+public interface IAuthService {
+	public AuthVO loadUserByUsername(String username);
+
+	public Object getSerializedValue(String key);
+
+	public String getRefreshToken(String username);
+}

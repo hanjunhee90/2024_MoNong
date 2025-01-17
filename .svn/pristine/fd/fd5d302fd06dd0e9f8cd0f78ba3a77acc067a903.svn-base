@@ -1,0 +1,230 @@
+	<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+	<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+	<%@ page session="false" %>
+	<!DOCTYPE html>
+	<html lang="ko">
+	<head>
+	    <meta charset="UTF-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	    <title>내 정보</title>
+	    <style>
+	        /* 기본 스타일 */
+	        body {
+	            font-family: Arial, sans-serif;
+	            margin: 0;
+	            padding: 0;
+	            background-color: #f9f9f9;
+	            color: #333;
+	        }
+	
+	        .mypage-container {
+	            width: 90%;
+	            margin: 20px auto;
+	            background-color: white;
+	            padding: 20px;
+	            border-radius: 10px;
+	            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	        }
+	
+	        h1 {
+	            text-align: center;
+	            color: #4CAF50;
+	        }
+	
+	        /* 첫 번째 블록: 프로필 및 닉네임 */
+	        .profile-block {
+	            display: flex;
+	            height: 500px;
+	            background-color: #f4f4f4;
+	            padding: 20px;
+	            border-radius: 10px;
+	            margin-bottom: 20px;
+	        }
+	        
+	        .img-block{
+	        	display: flex;
+	        	width: 50%;
+	        	height: 100%;
+	        	align-items: center;
+	            justify-content: center;
+	        }
+	
+	        .profile-image {
+	            width: 240px; /* 4배 크기 */
+	            height: 240px;
+	            border-radius: 50%;
+	            object-fit: cover;
+	            border: 3px solid #4CAF50;
+	            display: block;
+	        }
+	
+			.info-block{
+				display: flex;
+	        	width: 50%;
+	        	height: 100%;
+	        	align-items: center;
+	            justify-content: right;
+	            text-align: right;
+	            padding-right:150px;
+			}
+			
+	        .profile-info {
+	        	display: block;
+	        }
+	        
+	        .profile-actions button {
+	            padding: 8px 12px;
+	            font-size: 12px;
+	            background-color: #4CAF50;
+	            color: white;
+	            border: none;
+	            border-radius: 5px;
+	            cursor: pointer;
+	        }
+	
+	        .profile-actions button:hover {
+	            background-color: #45a049;
+	        }
+	        
+	        strong {
+			    font-size: 16px;
+			    margin:10px;
+			}
+			
+			input {
+			    padding: 10px;
+			    margin:15px !important;
+			    border: 1px solid #ccc;
+			    border-radius: 5px;
+			}
+	
+	        /* 반응형 스타일 */
+	        @media (max-width: 768px) {
+	            .profile-block {
+	                flex-direction: column;
+	                align-items: center;
+	            }
+	
+	            .profile-image {
+	                width: 150px;
+	                height: 150px;
+	            }
+	
+	            .profile-info {
+	                margin-left: 0;
+	                text-align: center;
+	            }
+	        }
+	    </style>
+	</head>
+	<body>
+	<jsp:include page="/WEB-INF/inc/common/header.jsp"></jsp:include>
+	<div class="mypage-container">
+	    <!-- 마이페이지 제목 -->
+	    <h1>내 정보</h1>
+	
+	    <!-- 첫 번째 블록: 프로필 및 닉네임 -->
+	    <div class="profile-block">
+	        <!-- 프로필 이미지 -->
+	        <div class="img-block">
+		        <c:if test="${myPageInfo.memProfile == null}">
+			        <img src="/download?imageFileName=non.png" id="myImage" class="profile-image" alt="프로필 이미지">
+				</c:if>
+				<c:if test="${myPageInfo.memProfile != null}">
+					<img src="${myPageInfo.memProfile}" id="myImage" class="profile-image" alt="프로필 이미지">
+				</c:if>
+				<form id="profileForm" enctype="multipart/form-data">
+					<input type="file" name="uploadImage" id="uploadImage" accept="image/*" style="display: none;">
+				</form>
+			</div>
+			
+			<div class="info-block">
+		        <div class="profile-info">
+		        	<div>
+					    <strong>아이디 : </strong>
+					    <input id="memId" value="${myPageInfo.memId != null ? myPageInfo.memId : '로그인x'}" readonly>
+					</div>
+					<div>
+					    <strong>이름 : </strong>
+					    <input id="memName" value="${myPageInfo.memName != null ? myPageInfo.memName : '로그인x'}" readonly>
+					</div>
+					<div>
+					    <strong>닉네임 : </strong>
+					    <input id="memNic" value="${myPageInfo.memNic != null ? myPageInfo.memNic : '로그인x'}">
+					</div>
+					<div>
+					    <strong>주소 : </strong>
+					    <input id="memAddr" value="${myPageInfo.memAddr != null ? myPageInfo.memAddr : '로그인x'}">
+					</div>
+				</div>
+	        </div>
+	    </div>
+	            <div class="profile-actions" style="text-align: center;">
+	                <button id='changeBtn' type="button">개인정보 수정</button>
+	            </div>
+    </div>
+	</body>
+	<script>
+	document.addEventListener("DOMContentLoaded", function() {
+	    document.getElementById("myImage").addEventListener("click", function() {
+	        document.getElementById("uploadImage").click();
+	    });
+		document.getElementById("uploadImage").addEventListener("change", function(event) {
+		    let file = event.target.files[0];
+		    if (file) {
+		        let fileType = file.type;
+		        let valTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+		        if (!valTypes.includes(fileType)) {
+		            alert("유효한 이미지 타입이 아닙니다.");
+		            event.target.value = ''; // 파일 input을 초기화
+		        } else {
+		            let formData = new FormData(document.getElementById("profileForm"));
+	
+		            fetch('<c:url value="/files/uploadProfile" />', {
+		                method: 'POST',
+		                body: formData,
+		            })
+		            .then(response => response.json()) // JSON 응답을 받음
+		            .then(res => {
+		                console.log(res);
+		                if (res.message === 'success') {
+		                    // 이미지를 표시하는 부분
+		                    document.getElementById("myImage").src = res.imagePath;
+		                }
+		            })
+		            .catch(error => {
+		                console.error('Error:', error);
+		            });
+		        }
+		    }
+		});
+		
+		const changeBtn = document.getElementById('changeBtn');
+		document.getElementById('changeBtn').addEventListener('click',function(){
+    		
+ 			const memId = document.getElementById('memId').value;
+			const memNic = document.getElementById('memNic').value;
+  			const memAddr = document.getElementById('memAddr').value;
+    		
+  			const infoData = new FormData();
+ 			infoData.append('memId', memId);
+ 			infoData.append('memNic', memNic);
+ 			infoData.append('memAddr', memAddr);
+  			
+    		fetch('/mypage/changeDo', {
+    		    method: 'POST',
+    		    body: infoData
+    		})
+		    .then(response => response.text())
+		    .then(response => {
+		    	alert("수정 성공했습니다.")
+		    	window.location.href = '/mypage/main';
+		    })
+		    .catch(error => {
+		    	alert("수정실패했습니다. 다시 시도해주세요.")
+		    	window.location.reload();
+		    });
+		});	
+	});
+	</script>
+	</html>

@@ -1,0 +1,82 @@
+import requests
+import cx_Oracle
+
+# API URL
+url = 'https://apihub.kma.go.kr/api/typ01/url/kma_sfcdd3.php?tm1=20230601&tm2=20241222&stn=0&help=1&mode=0&authKey=3VTnyXn5R82U58l5-RfNTQ'
+
+# Oracle DB 접속 정보
+db_user = 'blue'
+db_password = 'blue'
+db_host = '192.168.0.44'
+db_port = '1521'
+db_sid = 'xe'
+
+# Oracle 연결 문자열 (SID를 사용한 방식)
+dsn = cx_Oracle.makedsn(db_host, db_port, db_sid)
+
+# API 호출
+response = requests.get(url)
+
+# 응답 텍스트 디코딩
+response.encoding = 'EUC-KR'  # 응답 데이터의 인코딩을 EUC-KR로 설정
+
+# Oracle 데이터베이스에 연결
+try:
+    connection = cx_Oracle.connect(db_user, db_password, dsn)
+    cursor = connection.cursor()
+
+    # 응답 데이터를 텍스트로 처리 (여기서 텍스트를 적절히 나누어야 함)
+    data = response.text.splitlines()  # 각 줄을 나누어 리스트로 만듦 (가정: 각 줄이 하나의 레코드)
+
+    # 데이터 삽입
+    insert_sql = """
+    INSERT INTO api_response (TM, STN, WS_AVG, WR_DAY, WD_MAX, WS_MAX, WS_MAX_TM, WD_INS, WS_INS, 
+    WS_INS_TM, TA_AVG, TA_MAX, TA_MAX_TM, TA_MIN, TA_MIN_TM, TD_AVG, TS_AVG, TG_MIN, HM_AVG, 
+    HM_MIN, HM_MIN_TM, PV_AVG, EV_S, EV_L, FG_DUR, PA_AVG, PS_AVG, PS_MAX, PS_MAX_TM, PS_MIN, 
+    PS_MIN_TM, CA_TOT, SS_DAY, SS_DUR, SS_CMB, SI_DAY, SI_60M_MAX, SI_60M_MAX_TM, RN_DAY, RN_D99, 
+    RN_DUR, RN_60M_MAX, RN_60M_MAX_TM, RN_10M_MAX, RN_10M_MAX_TM, RN_POW_MAX, RN_POW_MAX_TM, 
+    SD_NEW, SD_NEW_TM, SD_MAX, SD_MAX_TM, TE_05, TE_10, TE_15, TE_30, TE_50)
+    VALUES (:TM, :STN, :WS_AVG, :WR_DAY, :WD_MAX, :WS_MAX, :WS_MAX_TM, :WD_INS, :WS_INS, :WS_INS_TM,
+    :TA_AVG, :TA_MAX, :TA_MAX_TM, :TA_MIN, :TA_MIN_TM, :TD_AVG, :TS_AVG, :TG_MIN, :HM_AVG, 
+    :HM_MIN, :HM_MIN_TM, :PV_AVG, :EV_S, :EV_L, :FG_DUR, :PA_AVG, :PS_AVG, :PS_MAX, :PS_MAX_TM, 
+    :PS_MIN, :PS_MIN_TM, :CA_TOT, :SS_DAY, :SS_DUR, :SS_CMB, :SI_DAY, :SI_60M_MAX, :SI_60M_MAX_TM, 
+    :RN_DAY, :RN_D99, :RN_DUR, :RN_60M_MAX, :RN_60M_MAX_TM, :RN_10M_MAX, :RN_10M_MAX_TM, 
+    :RN_POW_MAX, :RN_POW_MAX_TM, :SD_NEW, :SD_NEW_TM, :SD_MAX, :SD_MAX_TM, :TE_05, :TE_10, 
+    :TE_15, :TE_30, :TE_50)
+    """
+
+    for line in data:
+        values = line.split()  # 각 데이터 항목을 공백으로 나눔
+
+        # 값이 충분한지 확인 (최소한 56개의 값이 있어야 합니다)
+        if len(values) >= 56:
+            cursor.execute(insert_sql, {
+                'TM': values[0], 'STN': values[1], 'WS_AVG': values[2], 'WR_DAY': values[3], 'WD_MAX': values[4],
+                'WS_MAX': values[5], 'WS_MAX_TM': values[6], 'WD_INS': values[7], 'WS_INS': values[8],
+                'WS_INS_TM': values[9],
+                'TA_AVG': values[10], 'TA_MAX': values[11], 'TA_MAX_TM': values[12], 'TA_MIN': values[13],
+                'TA_MIN_TM': values[14], 'TD_AVG': values[15], 'TS_AVG': values[16], 'TG_MIN': values[17],
+                'HM_AVG': values[18], 'HM_MIN': values[19], 'HM_MIN_TM': values[20], 'PV_AVG': values[21],
+                'EV_S': values[22], 'EV_L': values[23], 'FG_DUR': values[24], 'PA_AVG': values[25],
+                'PS_AVG': values[26],
+                'PS_MAX': values[27], 'PS_MAX_TM': values[28], 'PS_MIN': values[29], 'PS_MIN_TM': values[30],
+                'CA_TOT': values[31], 'SS_DAY': values[32], 'SS_DUR': values[33], 'SS_CMB': values[34],
+                'SI_DAY': values[35],
+                'SI_60M_MAX': values[36], 'SI_60M_MAX_TM': values[37], 'RN_DAY': values[38], 'RN_D99': values[39],
+                'RN_DUR': values[40], 'RN_60M_MAX': values[41], 'RN_60M_MAX_TM': values[42], 'RN_10M_MAX': values[43],
+                'RN_10M_MAX_TM': values[44], 'RN_POW_MAX': values[45], 'RN_POW_MAX_TM': values[46],
+                'SD_NEW': values[47],
+                'SD_NEW_TM': values[48], 'SD_MAX': values[49], 'SD_MAX_TM': values[50], 'TE_05': values[51],
+                'TE_10': values[52], 'TE_15': values[53], 'TE_30': values[54], 'TE_50': values[55]
+            })
+
+    # 커밋 및 연결 종료
+    connection.commit()
+
+except cx_Oracle.DatabaseError as e:
+    print(f"Database error: {e}")
+finally:
+    cursor.close()
+    connection.close()
+
+print("데이터가 Oracle DB에 성공적으로 저장되었습니다.")

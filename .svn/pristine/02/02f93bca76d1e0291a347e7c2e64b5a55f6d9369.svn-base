@@ -1,0 +1,41 @@
+from flask import Flask, request, jsonify
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import load_model
+
+app = Flask(__name__)
+
+# 모델 로드
+model = load_model('pricePrediction(tomato).keras')
+
+# 스케일러 로드 또는 재정의 (모델 학습에 사용된 스케일러와 동일해야 함)
+scaler = MinMaxScaler(feature_range=(0, 1))
+# 학습 데이터의 피팅 값을 복원하는 과정 필요 (예: scaler.fit(train_data))
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        # 요청 데이터 파싱
+        data = request.json
+        input_features = data.get('inputFeatures')  # 예상: [[feature1, feature2, ..., featureN]]
+
+        if not input_features:
+            return jsonify({'error': 'Input features are missing.'}), 400
+
+        # 입력 데이터 전처리
+        input_features = np.array(input_features).reshape(1, -1, len(input_features[0]))  # (1, time_steps, features)
+
+        # 예측
+        predictions = model.predict(input_features)
+
+        # 예측값 역변환
+        predictions_rescaled = scaler.inverse_transform(predictions)
+
+        # 응답 생성
+        return jsonify({'predicted_prices': predictions_rescaled.tolist()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

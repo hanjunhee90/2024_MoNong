@@ -1,0 +1,19 @@
+package com.future.blue.mypage.vo;
+
+import lombok.Data;
+
+@Data
+public class MypageChatVO {
+	
+	private String tmChatId;
+	private String memId;
+	private String memNic;
+	private String memAddr;
+	private String tmDate;
+	private String prodPhotoPath;
+	private String tmContent;
+	private String tmContentType;
+    private String chatSeller;
+    private String chatBuyer;
+    private String chatProdId;
+}

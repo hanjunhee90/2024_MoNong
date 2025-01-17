@@ -1,0 +1,26 @@
+package com.future.blue.purchase.vo;
+
+import lombok.Data;
+
+@Data
+public class RoomVO {
+
+	    private String chatId;           // 채팅방의 고유 ID
+	    private String chatSeller;      // 판매자 회원 ID
+	    private String chatBuyer;       // 구매자 회원 ID
+	    private String chatStatus;     // 판매자의 상태 (예: 활성, 비활성)
+	    private String prodId;           // 연결된 상품 ID
+	    private String promiseDate;      // 거래 약속 날짜
+	    private String promiseTime;      // 거래 약속 시간
+	    private String promiseLocation;  // 거래 약속 장소
+	    private String promiseStatus;    // 거래 약속 상태 (예: 예약, 완료, 취소)
+	    private String alertTime;        // 거래 약속 알림 설정 시간
+	    private String createDt;         // 채팅방 생성일
+	    private String updateDt;         // 채팅방 수정일
+	    private int createChatRoom;      // 채팅방 생성 여부를 나타내는 플래그
+	    //츠가된것
+	    private String sellTitle;        // 물품 이름
+	    private String sellContents;     // 물품 설명
+	    private int sellPrice;           // 물품 가격
+	    private String sellRegion;       // 희망 지역
+	}

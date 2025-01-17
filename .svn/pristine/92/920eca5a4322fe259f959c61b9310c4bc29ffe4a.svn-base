@@ -1,0 +1,239 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>농작물 상태 체크</title>
+    <style>
+         body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .wrapper {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading-spinner .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        #previewImage, #resultImage {
+            max-width: 300px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #resultContent {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        #accordionContainer {
+            flex: 1;
+        }
+
+        .accordion-button {
+            background-color: #e8f5e9;
+            color: #004d40;
+            font-weight: bold;
+            border: none;
+        }
+
+        .accordion-button:not(.collapsed) {
+            background-color: #c8e6c9;
+            color: #003d33;
+        }
+
+        .accordion-body {
+            background-color: #f1f8e9;
+            font-size: 14px;
+        }
+
+        @media screen and (max-width: 768px) {
+            #resultContent {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #accordionContainer {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+	<jsp:include page="/WEB-INF/inc/common/header.jsp"></jsp:include>
+	<div class="container mt-5">
+        <h1>농작물 상태 확인</h1>
+        <p>작물 상태를 분석하고 결과를 확인하세요.</p>
+
+        <!-- 파일 업로드 및 분석 버튼 -->
+        <form id="uploadForm" enctype="multipart/form-data" class="d-flex align-items-center mb-5">
+            <input type="file" name="file" id="file" class="form-control me-2" required>
+            <input type="button" id="analyzeButton" value="분석하기" class="btn btn-primary">
+        </form>
+
+        <!-- 미리보기 -->
+        <div id="previewContainer" class="text-center mb-4" style="display: none;">
+            <img id="previewImage" src="https://via.placeholder.com/200" alt="미리보기 이미지" class="img-thumbnail">
+            <p class="mt-2">업로드된 이미지 미리보기</p>
+        </div>
+
+        <!-- 로딩 스피너 -->
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>이미지를 분석 중입니다...</p>
+        </div>
+
+        <!-- 분석 결과 -->
+        <div id="result" class="mt-4" style="display: none;">
+            <h3 class="text-center">농작물 상태</h3>
+            <div id="resultContent">
+                <!-- 왼쪽 결과 이미지 -->
+                <div>
+                    <img id="resultImage" alt="결과 이미지" class="img-thumbnail">
+                    <p class="mt-2 text-center">분석된 이미지</p>
+                </div>
+                <!-- 오른쪽 아코디언 -->
+                <div id="accordionContainer">
+                    <!-- 아코디언 항목이 동적으로 추가됩니다 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 결과 없음 -->
+        <div id="noResult" class="mt-4 text-center" style="display: none;">
+            <p>식물을 탐지하지 못했습니다.</p>
+        </div>
+    </div>
+
+    <jsp:include page="/WEB-INF/inc/common/footer.jsp"></jsp:include>
+</body>
+<script>
+    $(document).ready(function () {
+        // 이미지 미리보기
+        $('#file').change(function () {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                $('#previewImage').attr('src', e.target.result); // 미리보기 이미지 업데이트
+                $('#previewContainer').show(); // 미리보기 컨테이너 표시
+                $('#result').hide(); // 결과 화면 숨김
+            };
+            reader.readAsDataURL(this.files[0]);
+        });
+
+        // 분석 버튼 클릭
+        $('#analyzeButton').click(function () {
+            const formData = new FormData($('#uploadForm')[0]);
+
+            // 로딩 스피너 표시
+            $('.loading-spinner').show();
+            $('#result').hide();
+            $('#previewContainer').hide(); // 미리보기 숨김
+
+            $.ajax({
+                url: 'http://192.168.0.46:5000/analyze', // 서버 주소
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    $('.loading-spinner').hide();
+
+                    if (response.crop_conditions && response.crop_conditions.length > 0) {
+                        const imageBase64 = response.image;
+                        $('#resultImage').attr('src', 'data:image/jpeg;base64,' + imageBase64);
+                        $('#result').show();
+
+                        // 아코디언 초기화
+                        const cropConditions = response.crop_conditions;
+                        const accordionContainer = $('#accordionContainer');
+                        accordionContainer.empty();
+
+                        // 아코디언 항목 생성
+                        cropConditions.forEach(function (condition, index) {
+                            accordionContainer.append(
+                                '<div class="accordion" id="accordion' + index + '">' +
+                                    '<div class="accordion-item">' +
+                                        '<h2 class="accordion-header" id="headingExplanation' + index + '">' +
+                                            '<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExplanation' + index + '" aria-expanded="true" aria-controls="collapseExplanation' + index + '">' +
+                                                '설명' +
+                                            '</button>' +
+                                        '</h2>' +
+                                        '<div id="collapseExplanation' + index + '" class="accordion-collapse collapse show" aria-labelledby="headingExplanation' + index + '">' +
+                                            '<div class="accordion-body">' +
+                                                condition.EXPLANATION +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div class="accordion-item">' +
+                                        '<h2 class="accordion-header" id="headingOccurrence' + index + '">' +
+                                            '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOccurrence' + index + '" aria-expanded="false" aria-controls="collapseOccurrence' + index + '">' +
+                                                '발생 원인' +
+                                            '</button>' +
+                                        '</h2>' +
+                                        '<div id="collapseOccurrence' + index + '" class="accordion-collapse collapse" aria-labelledby="headingOccurrence' + index + '">' +
+                                            '<div class="accordion-body">' +
+                                                condition.OCCURRENCE +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div class="accordion-item">' +
+                                        '<h2 class="accordion-header" id="headingSymptoms' + index + '">' +
+                                            '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSymptoms' + index + '" aria-expanded="false" aria-controls="collapseSymptoms' + index + '">' +
+                                                '증상' +
+                                            '</button>' +
+                                        '</h2>' +
+                                        '<div id="collapseSymptoms' + index + '" class="accordion-collapse collapse" aria-labelledby="headingSymptoms' + index + '">' +
+                                            '<div class="accordion-body">' +
+                                                condition.SYMPTOMS +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div class="accordion-item">' +
+                                        '<h2 class="accordion-header" id="headingPrevention' + index + '">' +
+                                            '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePrevention' + index + '" aria-expanded="false" aria-controls="collapsePrevention' + index + '">' +
+                                                '예방' +
+                                            '</button>' +
+                                        '</h2>' +
+                                        '<div id="collapsePrevention' + index + '" class="accordion-collapse collapse" aria-labelledby="headingPrevention' + index + '">' +
+                                            '<div class="accordion-body">' +
+                                                condition.PREVENTION +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>'
+                            );
+                        });
+                    } else {
+                        $('#noResult').show();
+                    }
+                },
+                error: function () {
+                    $('.loading-spinner').hide();
+                    alert('이미지 처리 중 오류가 발생했습니다.');
+                }
+            });
+        });
+    });
+</script>
+</html>

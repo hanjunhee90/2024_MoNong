@@ -1,0 +1,18 @@
+package com.future.blue.auth.service;
+
+import java.util.Map;
+
+import com.future.blue.auth.dto.AuthDTO;
+import com.future.blue.auth.vo.AuthVO;
+
+public interface IAuthService {
+	public AuthVO loadUserByUsername(String username);
+
+	public void registerUser(AuthDTO authDTO);
+	
+	public AuthVO findByUserMail(String memPhone);
+	
+	public AuthVO findPassword(Map <String, String> IdAndPhone);
+	
+	public void updatePassword(Map <String, String> IdAndPw);
+}

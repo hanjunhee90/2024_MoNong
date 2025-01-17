@@ -1,0 +1,212 @@
+<!--게시글목록--> 
+
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ page session="false"%>
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자유게시판 리스트</title>
+
+<style>
+/* 기본 스타일 */
+body {
+	font-family: Arial, sans-serif;
+	margin: 0;
+	padding: 0;
+	background-color: #f9f9f9;
+	color: #333;
+}
+
+/* 검색 영역 */
+.search-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 10px;
+	background-color: #4CAF50;
+	color: white;
+}
+
+.search-container input, .search-container button {
+	padding: 8px;
+	margin: 5px;
+	border: none;
+	border-radius: 5px;
+}
+
+.search-container input {
+	flex: 1;
+	max-width: 300px;
+}
+
+.search-container button {
+	background-color: white;
+	color: #4CAF50;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.search-container button:hover {
+	background-color: #ddd;
+}
+
+/* 테이블 영역 */
+.board-table {
+	width: 90%;
+	margin: 20px auto;
+	border-collapse: collapse;
+	background-color: white;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.board-table th, .board-table td {
+	padding: 10px;
+	border: 1px solid #ddd;
+	text-align: center;
+}
+
+.board-table th {
+	background-color: #f4f4f4;
+	font-weight: bold;
+}
+
+.board-table td:nth-child(2) {
+	text-align: left;
+}
+
+/* 페이지네이션 */
+.pagination {
+	display: flex;
+	justify-content: center;
+	margin: 20px 0;
+}
+
+.pagination button {
+	padding: 5px 10px;
+	margin: 0 5px;
+	border: none;
+	background-color: #4CAF50;
+	color: white;
+	cursor: pointer;
+	border-radius: 5px;
+}
+
+.pagination button:hover {
+	background-color: #45a049;
+}
+
+/* 반응형 스타일 */
+@media ( max-width : 768px) {
+	.board-table, .board-table th, .board-table td {
+		font-size: 12px;
+	}
+	.search-container {
+		flex-direction: column;
+	}
+	.search-container input {
+		width: 100%;
+		margin-bottom: 5px;
+	}
+}
+
+@media ( max-width : 480px) {
+	.board-table, .board-table th, .board-table td {
+		font-size: 10px;
+		padding: 5px;
+	}
+}
+</style>
+</head>
+<body>
+
+	<!-- 검색 영역 -->
+	<div class="search-container">
+		<input type="text" id="searchTitle" placeholder="제목"> <input
+			type="text" id="searchCategory" placeholder="-- 전체 --">
+		<button id="searchBtn">검색</button>
+		<button id="resetBtn">초기화</button>
+		<!-- 검색 초기화 버튼 -->
+	</div>
+
+	<!-- 게시판 테이블 -->
+	<table class="board-table">
+		<thead>
+			<tr>
+				<th>No.</th>
+				<th>제목</th>
+				<th>작성자</th>
+				<th>작성일자</th>
+				<th>조회수</th>
+			</tr>
+		</thead>
+		<tbody id="boardContent"></tbody>
+	</table>
+
+	<!-- 페이지네이션 -->
+	<div class="pagination" id="pagination"></div>
+
+	<script>
+	
+/* jshint esversion: 6 */
+// 데이터 로드 함수 (AJAX 예제)
+function loadBoardData(page = 1, title = '', category = '') {
+    fetch(`/api/board?page=${page}&title=${title}&category=${category}`)
+        .then(response => response.json())
+        .then(data => {
+            const boardContent = document.getElementById('boardContent');
+            boardContent.innerHTML = ''; // 기존 데이터 제거
+            const pagination = document.getElementById('pagination');
+            boardContent.innerHTML = '';
+            
+            // 게시글 목록 렌더링
+            data.posts.forEach(post => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${post.id}</td>
+                    <td><a href="/board/detail/${post.id}">${post.title}</a></td> <!-- 상세 페이지로 링크 -->
+                    <td>${post.writer}</td>
+                    <td>${post.date}</td>
+                    <td>${post.views}</td>
+                `;
+                boardContent.appendChild(row);
+            });
+
+            // 페이지네이션 렌더링
+            pagination.innerHTML = '';
+            for (let i = 1; i <= data.totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.addEventListener('click', () => loadBoardData(i, title, category));
+                pagination.appendChild(button);
+            }
+        })
+        .catch(error => alert('게시글 로드에 실패했습니다.'));  // fetch에서 오류 발생하면 알림 팝업 뜸.
+}
+
+// 초기 데이터 로드
+loadBoardData();  // data.totalPages으로 동적으로 페이지 버튼 생성함.
+				  // 유저가 각 페이지 버튼을 클릭하면 loadBoardData 함수를 호출함. -> 해당 페이지 게시글 로드.
+
+// 검색 기능
+document.getElementById('searchBtn').addEventListener('click', () => {
+    const title = document.getElementById('searchTitle').value.trim();
+    const category = document.getElementById('searchCategory').value.trim();
+    loadBoardData(1, title, category); // 검색 조건으로 데이터 재로드
+});
+
+// 검색 초기화 기능
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchTitle').value = '';
+    document.getElementById('searchCategory').value = '';
+    loadBoardData(1); // 초기화 후 모든 게시글 로드
+});
+
+</script>
+
+</body>
+</html>

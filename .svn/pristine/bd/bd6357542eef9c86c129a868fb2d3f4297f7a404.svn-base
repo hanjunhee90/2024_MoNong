@@ -1,0 +1,148 @@
+<%
+  /* ================================================================= 
+   * 작성일     : 2024. 12. 31. 
+   * 작성자     : 팽수
+   * 상세설명  : 
+   * 화면ID  :
+   * ================================================================= 
+   * 수정일         작성자             내용      
+   * ----------------------------------------------------------------------- 
+   * ================================================================= 
+   */
+%>
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<style>
+#map {
+    width: 100%;
+    height: 350px;
+    max-width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+.modal-content {
+  border-radius: 10px;
+  background-color: #ffffff;
+  border: 2px solid var(--primary-color);
+}
+
+.modal-header {
+  background-color: var(--primary-color);
+  color: white;
+  border-bottom: 2px solid var(--primary-color);
+  font-weight: bold;
+}
+
+.modal-footer {
+  border-top: 2px solid var(--primary-color);
+}
+
+.modal-body p {
+  color: var(--text-color);
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.btn-secondary {
+  background-color: var(--primary-color);
+  border: none;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #3e8e41;
+}
+
+#map {
+  width: 100%;
+  height: 350px;
+  margin-top: 15px;
+}
+</style>
+
+<!-- 농작물 정보 모달 -->
+<div class="modal fade" id="promiseModal" tabindex="-1" aria-labelledby="promiseModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="promiseModalLabel">약속 잡기</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>날짜:</strong> <span name="tmMeetDate"></span></p>
+        <p><strong>시간:</strong> <span id="tmMeetTime"></span></p>
+        
+        <!-- 거래 희망 장소 -->
+        <div class="mb-3">
+          <label for="fullAddr"><strong>거래 희망 장소:</strong></label>
+          <input type="text" id="fullAddr" name="tmMeetPlace" placeholder="주소를 입력해주세요" readonly>
+          <button type="button" class="btn btn-secondary" onclick="fn_search()">주소 검색</button>
+        </div>
+
+        <!-- 지도 컨테이너 -->
+        <div id="map"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="sendData()">약속 잡기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=539b508df6c017894a2691b6cfff05ce&libraries=services"></script>
+<script>
+  var mapContainer = document.getElementById('map'); // 지도를 표시할 div
+  var mapOption = {
+    center: new kakao.maps.LatLng(33.450701, 126.570667), // 초기 지도 중심 좌표
+    level: 3 // 초기 확대 레벨
+  };
+
+  // 지도 생성
+  var map = new kakao.maps.Map(mapContainer, mapOption);
+
+  // 주소-좌표 변환 객체 생성
+  var geocoder = new kakao.maps.services.Geocoder();
+
+  // 지도 마커 변수 (기존 마커 제거를 위해 전역 선언)
+  var marker = null;
+
+  function fn_search() {
+    new daum.Postcode({
+      oncomplete: function (data) {
+        var addr = data.address; // 사용자가 선택한 주소
+        document.getElementById('fullAddr').value = addr;
+
+        // 주소로 좌표를 검색
+        geocoder.addressSearch(addr, function (result, status) {
+          if (status === kakao.maps.services.Status.OK) {
+            var coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+
+            // 기존 마커 제거
+            if (marker) marker.setMap(null);
+
+            // 새 마커 생성 및 추가
+            marker = new kakao.maps.Marker({
+              map: map,
+              position: coords
+            });
+
+            // 인포윈도우 추가
+            var infowindow = new kakao.maps.InfoWindow({
+              content: '<div style="width:150px;text-align:center;padding:6px 0;">' + addr + '</div>'
+            });
+            infowindow.open(map, marker);
+
+            // 지도 중심 좌표 이동
+            map.setCenter(coords);
+          } else {
+            alert("주소를 검색할 수 없습니다.");
+          }
+        });
+      }
+    }).open();
+  }
+</script>
+    

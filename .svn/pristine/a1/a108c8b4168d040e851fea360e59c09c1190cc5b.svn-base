@@ -1,0 +1,26 @@
+package com.future.blue.admin.web;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import com.future.blue.admin.service.IAdminService;
+import com.future.blue.auth.vo.AuthVO;
+
+@Controller
+public class adminController {
+
+	@Autowired
+	IAdminService service;
+	
+	@GetMapping("/admin/main")
+	public String adminView(Model model) {
+		List<AuthVO> memList = service.loadTenUser();
+		model.addAttribute("memList",memList);
+		return "admin/main";
+	}
+	
+}

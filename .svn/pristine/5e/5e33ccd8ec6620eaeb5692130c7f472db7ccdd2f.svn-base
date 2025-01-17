@@ -1,0 +1,88 @@
+import cx_Oracle
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.callbacks import ModelCheckpoint
+
+# 오라클 데이터베이스 연결
+connection = cx_Oracle.connect('blue', 'blue', '192.168.0.44:1521/xe')
+
+# SQL 쿼리
+query = """
+SELECT 
+    dpp.prce_reg_ymd, 
+    dpp.avrg_prce, 
+    ar.ta_avg, 
+    ar.rn_day
+FROM 
+    daily_product_prices2 dpp
+JOIN 
+    api_response ar
+ON 
+    dpp.prce_reg_ymd = ar.tm
+WHERE 
+    ar.rn_day != '-9.0'
+    AND ar.ta_avg != '-99.0'
+    AND dpp.pdlt_ctg_code IN ('100', '200', '300', '400')
+ORDER BY 
+    dpp.prce_reg_ymd ASC
+"""
+
+# 데이터 가져오기
+df = pd.read_sql(query, con=connection)
+
+# 날짜 컬럼을 datetime 타입으로 변환
+df['PRCE_REG_YMD'] = pd.to_datetime(df['PRCE_REG_YMD'])
+
+# 필요한 컬럼만 사용
+df = df[['PRCE_REG_YMD', 'AVRG_PRCE', 'TA_AVG', 'RN_DAY']]
+
+# 결측치 처리
+df = df.dropna()
+
+# 데이터 스케일링
+scaler = MinMaxScaler()
+scaled_data = scaler.fit_transform(df[['AVRG_PRCE', 'TA_AVG', 'RN_DAY']])
+
+# 시계열 데이터 생성 함수
+def create_sequences(data, sequence_length):
+    X, y = [], []
+    for i in range(len(data) - sequence_length):
+        X.append(data[i:i + sequence_length, :-1])  # 독립 변수
+        y.append(data[i + sequence_length, 0])    # 종속 변수
+    return np.array(X), np.array(y)
+
+# 시퀀스 길이 설정 (과거 30일 데이터로 미래 예측)
+sequence_length = 5
+X, y = create_sequences(scaled_data, sequence_length)
+
+# 학습 데이터와 테스트 데이터 분리
+split = int(len(X) * 0.8)
+X_train, y_train = X[:split], y[:split]
+X_test, y_test = X[split:], y[split:]
+
+# LSTM 모델 생성
+model = Sequential([
+    LSTM(50, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
+    Dropout(0.2),
+    LSTM(50, return_sequences=False),
+    Dropout(0.2),
+    Dense(25, activation='relu'),
+    Dense(1)  # 출력: 미래 가격
+])
+
+# 모델 컴파일
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# 모델 훈련 및 체크포인트 설정
+checkpoint = ModelCheckpoint("price_prediction_model_checkpoint.keras", save_best_only=True, verbose=1)
+
+history = model.fit(X_train, y_train, epochs=1, batch_size=32, validation_data=(X_test, y_test), callbacks=[checkpoint], verbose=1)
+
+# 훈련 완료 후 모델 저장
+model.save("price_prediction_model")  # SavedModel 포맷으로 저장
+
+# 연결 종료
+connection.close()

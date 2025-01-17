@@ -1,0 +1,10 @@
+package com.future.blue.auth.service;
+
+import com.future.blue.auth.dto.AuthDTO;
+import com.future.blue.auth.vo.AuthVO;
+
+public interface IAuthService {
+	public AuthVO loadUserByUsername(String username);
+
+	public void registerUser(AuthDTO authDTO);
+}

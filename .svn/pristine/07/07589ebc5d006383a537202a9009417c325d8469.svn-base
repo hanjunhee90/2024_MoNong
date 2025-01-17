@@ -1,0 +1,20 @@
+package com.future.blue.mypage.vo;
+
+import java.time.LocalDateTime;
+
+import lombok.Data;
+
+@Data
+public class MypageTradeVO {
+
+    private String memId;
+    private String memNic;
+    private String memAddr;
+    private LocalDateTime updateDt;  
+    private int prodPrice;  
+    private String prodPhotoPath;
+    private String prodStatus;
+    private String prodId;
+    private String prodName;
+    
+}

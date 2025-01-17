@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.future.blue.admin.dao.IAdminDAO">
+	<select id="loadTenUser" resultType="AdminVO">
+		SELECT ROWNUM as rnum, A.*
+		FROM (SELECT
+		      mem_id
+		     , mem_name
+		     , mem_phone
+		     , mem_nic
+		     , mem_addr
+		     , mem_profile
+		     , create_date
+		FROM member
+		WHERE mem_role = 'USER'
+		ORDER BY create_date) A
+		WHERE ROWNUM &lt;= 10
+		ORDER BY rnum DESC
+	</select>
+</mapper>

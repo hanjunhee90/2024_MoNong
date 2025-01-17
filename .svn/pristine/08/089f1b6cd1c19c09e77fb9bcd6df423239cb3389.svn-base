@@ -1,0 +1,62 @@
+package com.future.blue.auth.web;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.future.blue.auth.enums.Role;
+import com.future.blue.auth.service.IAuthService;
+import com.future.blue.auth.util.JwtUtil;
+import com.future.blue.auth.vo.AuthVO;
+
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+	@Autowired
+	IAuthService service;
+
+	@Autowired
+	private RedisTemplate<String, String> redisTemplate;
+	
+	@PostMapping("/login")
+    public String login(@RequestParam String username, @RequestParam String password) {
+        AuthVO loginUser = service.loadUserByUsername(username);
+        if (loginUser.getMemId().equals(username) && loginUser.getMemPw().equals(password)) {
+            Role userRole = loginUser.getMemRole();
+            String accessToken = JwtUtil.generateToken(username, userRole);
+            String refreshToken = JwtUtil.generateRefreshToken(username, userRole);
+            redisTemplate.opsForValue().set(username, refreshToken, 86400, TimeUnit.SECONDS);
+
+            return accessToken;
+        }
+        throw new RuntimeException("Invalid credentials");
+    }
+	
+//	@GetMapping("/logout")
+//	public String logout(HttpServletRequest request, HttpServletResponse response) {
+//		String token = JwtUtil.extractToken(request);
+//		String username = JwtUtil.getUsernameFromToken(token);
+//		JwtUtil.deleteCookie(response, "accessToken");
+//		redisTemplate.delete(username);
+//		return "home";
+//	}
+	
+}

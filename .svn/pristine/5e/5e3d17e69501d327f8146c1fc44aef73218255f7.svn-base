@@ -1,0 +1,53 @@
+package com.future.blue.push.service;
+
+import java.security.Security;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import nl.martijndwars.webpush.Notification;
+import nl.martijndwars.webpush.PushService;
+import nl.martijndwars.webpush.Subscription;
+
+@Service
+public class PushNotificationService {
+
+    @Value("${vapid.publicKey}")
+    private String publicKey;
+
+    @Value("${vapid.privateKey}")
+    private String privateKey;
+
+    @Value("${vapid.subject}")
+    private String subject;
+
+    // BouncyCastleProvider 초기화
+    public PushNotificationService() {
+        if (Security.getProvider("BC") == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
+
+    // 푸시 알림 전송 로직
+    public void sendPush(Subscription subscription, String title, String body, String chatSeller, String chatBuyer, String chatProdId) {
+        PushService pushService = new PushService();
+        try {
+            pushService.setPublicKey(publicKey);
+            pushService.setPrivateKey(privateKey);
+            pushService.setSubject(subject);
+
+            // 푸시 알림에 포함할 데이터
+            String payload = String.format(
+                "{\"title\":\"%s\", \"body\":\"%s\", \"chatSeller\":\"%s\", \"chatBuyer\":\"%s\", \"chatProdId\":\"%s\"}",
+                title, body, chatSeller, chatBuyer, chatProdId
+            );
+
+            // 알림 생성 및 전송
+            Notification notification = new Notification(subscription, payload);
+            pushService.send(notification);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
